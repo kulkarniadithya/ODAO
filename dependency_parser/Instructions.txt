@@ -1,0 +1,4 @@
+Download the CORENLP jar files from https://stanfordnlp.github.io/CoreNLP/download.html.
+Place stanford-corenlp-4.0.0.jar and stanford-corenlp-4.0.0-models.jar in this folder and run the following command from this folder
+
+java -Xmx8g -XX:-UseGCOverheadLimit -XX:MaxPermSize=1024m -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -preload tokenize,ssplit,pos,lemma,ner,parse,depparse -status_port 9015  -port 9015 -timeout 1500000
