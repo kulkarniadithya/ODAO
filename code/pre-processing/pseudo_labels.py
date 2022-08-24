@@ -44,7 +44,7 @@ def get_pseudo_labels(parser, sentence):
 
 if __name__ == "__main__":
     dep_parser = CoreNLPDependencyParser('http://localhost:9015')
-    read_path = "../../data/processed_data/SemEval16-Restaurant/sentence_dictionary_train.pickle"
+    read_path = "../../data/processed_data/SemEval14-Restaurant/sentence_dictionary_train.pickle"
     with open(read_path, 'rb') as handle:
         read_data = pickle.load(handle)
     print(read_data[0])
@@ -55,10 +55,8 @@ if __name__ == "__main__":
         pseudo_labeled_data[i]['review'] = read_data[i]['review']
         pseudo_labeled_data[i]['tokens'] = words
         pseudo_labeled_data[i]['labels'] = pseudo_labels
-        # print(word_list)
-        # print(labels)
 
-    write_path = "../../data/processed_data/SemEval16-Restaurant/pseudo_labeled_data_train.pickle"
+    write_path = "../../data/processed_data/SemEval14-Restaurant/pseudo_labeled_data_train.pickle"
     with open(write_path, 'wb') as handle:
         pickle.dump(pseudo_labeled_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
     with open(write_path, 'rb') as handle:

@@ -10,7 +10,7 @@ The experiments are conducted on SemEval 14, 15, 16 restaurant and SemEval 14 La
 The original dataset can be found in the data/original_data folder.
 
 <h3> Pre-processing </h3>
-Data pre-processing includes three steps:
+Data pre-processing includes four steps:
 <ul>
 <li>Format Data: The original file is processed and stored in a dictionary.
 Run pre-processing/format_data.py to perform this step.</li>
@@ -26,7 +26,9 @@ Once the process is running on port 9015, run pre-processing/pseudo_labels.py to
 <li>Split Data: Once the weak labels are generated for the original train set. This step
 splits the train set into pseudo train (reviews for which the weak label generator has identified both aspect term and opinion term)
 and pseudo test (otherwise). The pseudo test is used for prediction as part of self-training.
-Run pre-processing/split_data to execute this step.
+Run pre-processing/split_data.py to execute this step.
+</li>
+<li>Get Pairs: This step processes the pseudo train set to format it for training. Run pre-processing/get_pairs.py to execute this step.
 </li>
 </ul>
 
