@@ -168,9 +168,9 @@ if __name__ == "__main__":
         temp_correlation_result = []
         for z in range(0, len(epoch_at_bert_output)):
             X = epoch_at_bert_output[z]
-            Y = epoch_osae_bert_output[z]
+            Y = epoch_osae_bert_output[z][:len(X)]
             X1 = epoch_op_bert_output[z]
-            Y1 = epoch_asoe_bert_output[z]
+            Y1 = epoch_asoe_bert_output[z][:len(X1)]
             cca = CCA(n_components=4)
             cca.fit(X, Y)
             X_c, Y_c = cca.transform(X, Y)
