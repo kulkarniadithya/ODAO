@@ -78,7 +78,7 @@ if __name__ == "__main__":
     optimizer2 = optim.AdamW(params=model2.parameters(), lr=1e-5)
     optimizer3 = optim.AdamW(params=model3.parameters(), lr=1e-5)
     optimizer4 = optim.AdamW(params=model4.parameters(), lr=1e-5)
-    n_epochs = 18
+    n_epochs = 1
     at_train_data = DataLoader(at_dataset, batch_size=1)
     op_train_data = DataLoader(op_dataset, batch_size=1)
     asoe_train_data = DataLoader(asoe_dataset, batch_size=1)
@@ -93,6 +93,10 @@ if __name__ == "__main__":
         asoe_current_loss = 0
         osae_train_loss = []
         osae_current_loss = 0
+        epoch_at_bert_output = []
+        epoch_op_bert_output = []
+        epoch_asoe_bert_output = []
+        epoch_osae_bert_output = []
         for i, batch in enumerate(tqdm(at_train_data)):
             at_input_ids = batch['input_ids'].to(device)
             at_segment_ids = batch['segment_ids'].to(device)
@@ -100,6 +104,7 @@ if __name__ == "__main__":
             at_end_index = batch['end_index'].to(device)
             at_loss, at_bert_output = model1(input_ids=at_input_ids, token_type_ids=at_segment_ids, attention_mask=None,
                 module_start_positions=at_start_index, module_end_positions=at_end_index)
+            epoch_at_bert_output.append(at_bert_output[0].squeeze().detach().cpu())
             at_loss.backward()
             at_current_loss += at_loss.item()
             if i % 8 == 0 and i > 0:
@@ -115,6 +120,7 @@ if __name__ == "__main__":
             op_end_index = batch['end_index'].to(device)
             op_loss, op_bert_output = model2(input_ids=op_input_ids, token_type_ids=op_segment_ids, attention_mask=None,
                 module_start_positions=op_start_index, module_end_positions=op_end_index)
+            epoch_op_bert_output.append(op_bert_output[0].squeeze().detach().cpu())
             op_loss.backward()
             op_current_loss += op_loss.item()
             if i % 8 == 0 and i > 0:
@@ -130,7 +136,9 @@ if __name__ == "__main__":
             asoe_end_index = batch['end_index'].to(device)
             asoe_loss, asoe_bert_output = model3(input_ids=asoe_input_ids, token_type_ids=asoe_segment_ids, attention_mask=None,
                 module_start_positions=asoe_start_index, module_end_positions=asoe_end_index)
-            # print(asoe_loss)
+            asoe_input_ids = np.array(asoe_input_ids.squeeze().detach().cpu().tolist())
+            asoe_indexes = np.where(asoe_input_ids == 102)[0]
+            epoch_asoe_bert_output.append(asoe_bert_output[0].squeeze()[asoe_indexes[0]:asoe_indexes[1]+1].detach().cpu())
             asoe_loss.backward()
             asoe_current_loss += asoe_loss.item()
             if i % 8 == 0 and i > 0:
@@ -146,6 +154,9 @@ if __name__ == "__main__":
             osae_end_index = batch['end_index'].to(device)
             osae_loss, osae_bert_output = model4(input_ids=osae_input_ids, token_type_ids=osae_segment_ids, attention_mask=None,
                 module_start_positions=osae_start_index, module_end_positions=osae_end_index)
+            osae_input_ids = np.array(osae_input_ids.squeeze().detach().cpu().tolist())
+            osae_indexes = np.where(osae_input_ids == 102)[0]
+            epoch_osae_bert_output.append(osae_bert_output[0].squeeze()[osae_indexes[0]:osae_indexes[1]+1].detach().cpu())
             osae_loss.backward()
             osae_current_loss += osae_loss.item()
             if i % 8 == 0 and i > 0:
@@ -154,21 +165,24 @@ if __name__ == "__main__":
                 osae_train_loss.append(osae_current_loss / 8)
                 osae_current_loss = 0
 
-        X = at_bert_output[0].squeeze().detach().cpu()
-        Y = osae_bert_output[0].squeeze()[:len(X)].detach().cpu()
-        cca = CCA(n_components=4)
-        cca.fit(X, Y)
-        X_c, Y_c = cca.transform(X, Y)
-        result1 = np.corrcoef(X_c.T, Y_c.T)[0, 1]
-
-        X1 = op_bert_output[0].squeeze().detach().cpu()
-        Y1 = asoe_bert_output[0].squeeze()[:len(X1)].detach().cpu()
-        cca1 = CCA(n_components=4)
-        cca1.fit(X1, Y1)
-        X1_c, Y1_c = cca1.transform(X1, Y1)
-        result2 = np.corrcoef(X1_c.T, Y1_c.T)[0, 1]
-        correlation = result1 + result2
-        correlation_result.append(correlation)
+        temp_correlation_result = []
+        for z in range(0, len(epoch_at_bert_output)):
+            X = epoch_at_bert_output[z]
+            Y = epoch_osae_bert_output[z]
+            X1 = epoch_op_bert_output[z]
+            Y1 = epoch_asoe_bert_output[z]
+            cca = CCA(n_components=4)
+            cca.fit(X, Y)
+            X_c, Y_c = cca.transform(X, Y)
+            result1 = np.corrcoef(X_c.T, Y_c.T)[0, 1]
+            cca1 = CCA(n_components=4)
+            cca1.fit(X1, Y1)
+            X1_c, Y1_c = cca1.transform(X1, Y1)
+            result2 = np.corrcoef(X1_c.T, Y1_c.T)[0, 1]
+            correlation = result1 + result2
+            temp_correlation_result.append(correlation)
+        mean_correlation = np.mean(np.array(temp_correlation_result))
+        correlation_result.append(mean_correlation)
 
         optimizer1.step()
         optimizer1.zero_grad()
@@ -182,5 +196,5 @@ if __name__ == "__main__":
         torch.save(model2, '../../saved_models/op_epoch_' + str(epochs))
         torch.save(model3, '../../saved_models/asoe_epoch_' + str(epochs))
         torch.save(model4, '../../saved_models/osae_epoch_' + str(epochs))
-        print("Epoch: " + str(epochs) + " Correlation score: " + str(correlation))
+        print("Epoch: " + str(epochs) + " Correlation score: " + str(mean_correlation))
     print(correlation_result)
