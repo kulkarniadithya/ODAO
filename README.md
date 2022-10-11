@@ -6,7 +6,7 @@ The supervised extraction methods achieve state-of-the-art performance but requi
 
 <h3> Dataset </h3>
 
-The experiments are conducted on SemEval 14, 15, 16 restaurant and SemEval 14 Laptop datasets.
+The experiments are conducted on SemEval 14, 15, 16 Restaurant and SemEval 14 Laptop datasets.
 The original dataset can be found in the data/original_data folder.
 
 <h3> Pre-processing </h3>
