@@ -8,8 +8,12 @@ from torch.utils.data import DataLoader
 from sklearn.cross_decomposition import CCA
 from construct_dataset import ConstructDatasetLayer1, ConstructDatasetLayer2
 from build_model import Model
+import random
+
 
 if __name__ == "__main__":
+    torch.manual_seed(42)
+    random.seed(42)
     pseudo_train_read_path = "../../data/processed_data/SemEval16-Restaurant/pseudo_train_dataset_formatted.pickle"
     with open(pseudo_train_read_path, 'rb') as handle:
         read_pseudo_train_dataset = pickle.load(handle)
@@ -74,17 +78,18 @@ if __name__ == "__main__":
     model3.train().to(device)
     model4 = Model()
     model4.train().to(device)
+
     optimizer1 = optim.AdamW(params=model1.parameters(), lr=1e-5)
     optimizer2 = optim.AdamW(params=model2.parameters(), lr=1e-5)
     optimizer3 = optim.AdamW(params=model3.parameters(), lr=1e-5)
     optimizer4 = optim.AdamW(params=model4.parameters(), lr=1e-5)
-    n_epochs = 1
+    n_epochs = 10
     at_train_data = DataLoader(at_dataset, batch_size=1)
     op_train_data = DataLoader(op_dataset, batch_size=1)
     asoe_train_data = DataLoader(asoe_dataset, batch_size=1)
     osae_train_data = DataLoader(osae_dataset, batch_size=1)
     correlation_result = []
-    for epochs in range(n_epochs):
+    for epochs in range(0, n_epochs):
         at_train_loss = []
         at_current_loss = 0
         op_train_loss = []
@@ -103,7 +108,7 @@ if __name__ == "__main__":
             at_start_index = batch['start_index'].to(device)
             at_end_index = batch['end_index'].to(device)
             at_loss, at_bert_output = model1(input_ids=at_input_ids, token_type_ids=at_segment_ids, attention_mask=None,
-                module_start_positions=at_start_index, module_end_positions=at_end_index)
+                                             module_start_positions=at_start_index, module_end_positions=at_end_index)
             epoch_at_bert_output.append(at_bert_output[0].squeeze().detach().cpu())
             at_loss.backward()
             at_current_loss += at_loss.item()
@@ -119,7 +124,7 @@ if __name__ == "__main__":
             op_start_index = batch['start_index'].to(device)
             op_end_index = batch['end_index'].to(device)
             op_loss, op_bert_output = model2(input_ids=op_input_ids, token_type_ids=op_segment_ids, attention_mask=None,
-                module_start_positions=op_start_index, module_end_positions=op_end_index)
+                                             module_start_positions=op_start_index, module_end_positions=op_end_index)
             epoch_op_bert_output.append(op_bert_output[0].squeeze().detach().cpu())
             op_loss.backward()
             op_current_loss += op_loss.item()
@@ -135,7 +140,7 @@ if __name__ == "__main__":
             asoe_start_index = batch['start_index'].to(device)
             asoe_end_index = batch['end_index'].to(device)
             asoe_loss, asoe_bert_output = model3(input_ids=asoe_input_ids, token_type_ids=asoe_segment_ids, attention_mask=None,
-                module_start_positions=asoe_start_index, module_end_positions=asoe_end_index)
+                                                 module_start_positions=asoe_start_index, module_end_positions=asoe_end_index)
             asoe_input_ids = np.array(asoe_input_ids.squeeze().detach().cpu().tolist())
             asoe_indexes = np.where(asoe_input_ids == 102)[0]
             epoch_asoe_bert_output.append(asoe_bert_output[0].squeeze()[asoe_indexes[0]:asoe_indexes[1]+1].detach().cpu())
@@ -153,7 +158,7 @@ if __name__ == "__main__":
             osae_start_index = batch['start_index'].to(device)
             osae_end_index = batch['end_index'].to(device)
             osae_loss, osae_bert_output = model4(input_ids=osae_input_ids, token_type_ids=osae_segment_ids, attention_mask=None,
-                module_start_positions=osae_start_index, module_end_positions=osae_end_index)
+                                                 module_start_positions=osae_start_index, module_end_positions=osae_end_index)
             osae_input_ids = np.array(osae_input_ids.squeeze().detach().cpu().tolist())
             osae_indexes = np.where(osae_input_ids == 102)[0]
             epoch_osae_bert_output.append(osae_bert_output[0].squeeze()[osae_indexes[0]:osae_indexes[1]+1].detach().cpu())
@@ -197,4 +202,8 @@ if __name__ == "__main__":
         torch.save(model3, '../../saved_models/asoe_epoch_' + str(epochs))
         torch.save(model4, '../../saved_models/osae_epoch_' + str(epochs))
         print("Epoch: " + str(epochs) + " Correlation score: " + str(mean_correlation))
+        print("Epoch: " + str(epochs) + " AT train loss: " + str(np.mean(np.array(at_train_loss))))
+        print("Epoch: " + str(epochs) + " OP train loss: " + str(np.mean(np.array(op_train_loss))))
+        print("Epoch: " + str(epochs) + " ASOE train loss: " + str(np.mean(np.array(asoe_train_loss))))
+        print("Epoch: " + str(epochs) + " OSAE train loss: " + str(np.mean(np.array(osae_train_loss))))
     print(correlation_result)

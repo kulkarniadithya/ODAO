@@ -26,18 +26,20 @@ class Model(nn.Module):
             if len(module_end_positions.size()) > 1:
                 module_end_positions = module_end_positions.squeeze(-1)
 
-        loss_func = CrossEntropyLoss()
-        start_index = torch.nonzero(module_start_positions)
-        end_index = torch.nonzero(module_end_positions)
-        start_index = start_index.tolist()
-        end_index = end_index.tolist()
-        module_start_loss = 0
-        module_end_loss = 0
-        for i in range(0, len(start_index)):
-            for j in range(0, len(start_index[i])):
-                module_start_loss = module_start_loss + loss_func(module_start_logits, torch.tensor([start_index[i][j]]))
-        for i in range(0, len(end_index)):
-            for j in range(0, len(end_index[i])):
-                module_end_loss = module_end_loss + loss_func(module_end_logits, torch.tensor([end_index[i][j]]))
-        module_loss = (module_start_loss + module_end_loss) / 2
-        return module_loss, module_bert_output
+            loss_func = CrossEntropyLoss()
+            start_index = torch.nonzero(module_start_positions[0])
+            end_index = torch.nonzero(module_end_positions[0])
+            start_index = start_index.tolist()
+            end_index = end_index.tolist()
+            module_start_loss = 0
+            module_end_loss = 0
+            for i in range(0, len(start_index)):
+                for j in range(0, len(start_index[i])):
+                    module_start_loss = module_start_loss + loss_func(module_start_logits, torch.tensor([start_index[i][j]]))
+            for i in range(0, len(end_index)):
+                for j in range(0, len(end_index[i])):
+                    module_end_loss = module_end_loss + loss_func(module_end_logits, torch.tensor([end_index[i][j]]))
+            module_loss = (module_start_loss + module_end_loss) / 2
+            return module_loss, module_bert_output
+        else:
+            return module_bert_output, module_start_logits, module_end_logits
